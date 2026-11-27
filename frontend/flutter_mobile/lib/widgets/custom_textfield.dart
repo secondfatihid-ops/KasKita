@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
-class CustomTextField extends StatelessWidget {
+class CustomTextField extends StatefulWidget {
   final TextEditingController controller;
   final String label;
   final IconData icon;
@@ -21,16 +21,38 @@ class CustomTextField extends StatelessWidget {
   });
 
   @override
+  State<CustomTextField> createState() => _CustomTextFieldState();
+}
+
+class _CustomTextFieldState extends State<CustomTextField> {
+  bool _isPasswordVisible = false;
+
+  @override
   Widget build(BuildContext context) {
     return TextFormField(
-      controller: controller,
-      obscureText: isPassword,
-      keyboardType: keyboardType,
-      validator: validator,
-      maxLines: isPassword ? 1 : maxLines,
+      controller: widget.controller,
+      obscureText: widget.isPassword && !_isPasswordVisible,
+      keyboardType: widget.keyboardType,
+      validator: widget.validator,
+      maxLines: widget.isPassword ? 1 : widget.maxLines,
       decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
+        labelText: widget.label,
+        prefixIcon: Icon(widget.icon),
+        suffixIcon: widget.isPassword
+            ? IconButton(
+                tooltip: _isPasswordVisible
+                    ? 'Sembunyikan password'
+                    : 'Tampilkan password',
+                icon: Icon(
+                  _isPasswordVisible
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                ),
+                onPressed: () {
+                  setState(() => _isPasswordVisible = !_isPasswordVisible);
+                },
+              )
+            : null,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
