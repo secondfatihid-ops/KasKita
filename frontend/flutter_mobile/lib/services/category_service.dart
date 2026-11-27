@@ -1,25 +1,15 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../models/category_model.dart';
-import 'auth_service.dart';
+import 'api_client.dart';
 
 class CategoryService {
-  static const String baseUrl = AuthService.baseUrl;
-  final AuthService _authService = AuthService();
+  final ApiClient _apiClient = ApiClient.instance;
 
   // Ambil semua daftar kategori
   Future<List<CategoryModel>> getCategories() async {
     try {
-      final token = await _authService.getToken();
-      final response = await http.get(
-        Uri.parse('$baseUrl/categories'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
+      final response = await _apiClient.get('categories');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> body = jsonDecode(response.body);
@@ -38,18 +28,10 @@ class CategoryService {
   // Tambah kategori baru (Khusus Owner)
   Future<Map<String, dynamic>> createCategory(String name, String type) async {
     try {
-      final token = await _authService.getToken();
-      final response = await http.post(
-        Uri.parse('$baseUrl/categories'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
+      final response = await _apiClient.postJson('categories', {
           'name': name,
           'type': type, // 'income' atau 'expense'
-        }),
-      );
+        });
 
       final data = jsonDecode(response.body);
 
@@ -76,14 +58,9 @@ class CategoryService {
     String type,
   ) async {
     try {
-      final token = await _authService.getToken();
-      final response = await http.put(
-        Uri.parse('$baseUrl/categories/$id'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({'name': name, 'type': type}),
+      final response = await _apiClient.putJson(
+        'categories/$id',
+        {'name': name, 'type': type},
       );
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       if (response.statusCode == 200) {
@@ -103,11 +80,7 @@ class CategoryService {
 
   Future<Map<String, dynamic>> deleteCategory(int id) async {
     try {
-      final token = await _authService.getToken();
-      final response = await http.delete(
-        Uri.parse('$baseUrl/categories/$id'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
+      final response = await _apiClient.delete('categories/$id');
 
       if (response.statusCode == 200) {
         return {'success': true, 'message': 'Kategori berhasil dihapus'};

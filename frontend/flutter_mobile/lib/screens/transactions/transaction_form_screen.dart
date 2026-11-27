@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:material_ui/material_ui.dart';
@@ -28,7 +26,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
   int? _selectedCategoryId;
   String _selectedType = 'expense';
-  File? _receiptImage;
+  XFile? _receiptImage;
+  Uint8List? _receiptImageBytes;
 
   @override
   void initState() {
@@ -61,7 +60,13 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         imageQuality: 85,
       );
       if (image != null && mounted) {
-        setState(() => _receiptImage = File(image.path));
+        final bytes = await image.readAsBytes();
+        if (mounted) {
+          setState(() {
+            _receiptImage = image;
+            _receiptImageBytes = bytes;
+          });
+        }
       }
     } on PlatformException catch (error) {
       if (mounted) {
@@ -256,8 +261,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                   const SizedBox(height: 12),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.file(
-                      _receiptImage!,
+                    child: Image.memory(
+                      _receiptImageBytes!,
                       height: 180,
                       width: double.infinity,
                       fit: BoxFit.cover,

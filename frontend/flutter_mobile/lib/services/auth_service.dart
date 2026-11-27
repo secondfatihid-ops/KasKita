@@ -1,20 +1,18 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'api_client.dart';
+
 class AuthService {
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:5000/api',
-  );
+  final ApiClient _apiClient = ApiClient.instance;
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/auth/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'password': password}),
+      final response = await _apiClient.postJson(
+        'auth/login',
+        {'email': email, 'password': password},
+        authenticated: false,
       );
 
       final data = jsonDecode(response.body);
@@ -41,15 +39,15 @@ class AuthService {
     String role,
   ) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/auth/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+      final response = await _apiClient.postJson(
+        'auth/register',
+        {
           'name': name,
           'email': email,
           'password': password,
           'role_id': role == 'owner' ? 1 : 2,
-        }),
+        },
+        authenticated: false,
       );
 
       final data = jsonDecode(response.body);

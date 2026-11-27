@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:image_picker/image_picker.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../models/transaction_model.dart';
@@ -55,7 +54,7 @@ class TransactionController extends ChangeNotifier {
     required int categoryId,
     required double amount,
     String? description,
-    File? receiptImage,
+    XFile? receiptImage,
     required Function(String, bool) onFinished,
   }) async {
     _isLoading = true;
@@ -89,7 +88,7 @@ class TransactionController extends ChangeNotifier {
     required int categoryId,
     required double amount,
     String? description,
-    File? receiptImage,
+    XFile? receiptImage,
     required Function(String, bool) onFinished,
   }) async {
     _isLoading = true;
