@@ -90,7 +90,31 @@ These accounts are created by `seed.sql` for testing only. Change or delete them
 
 ## Backend, web and mobile setup
 
-Setup steps for these parts will be added as each one is built.
+Start the Express API with its database and Cloudinary environment configured:
+
+```
+cd backend/express_server
+npm install
+npm run dev
+```
+
+Run the Flutter app from `frontend/flutter_mobile`:
+
+```
+flutter pub get
+flutter run
+```
+
+KasKita connects to `http://10.0.2.2:5000` by default (the Android emulator's
+address for the host computer). On a physical phone, open **Account → Backend
+connection** and enter the computer's LAN address, such as
+`http://192.168.1.20:5000`. Use an HTTPS URL for a deployed API. The app keeps
+the configured URL and signed-in session on the device.
+
+The mobile app supports registration and sign-in, a balance/income/expense
+overview, transaction listing and create/edit/delete actions, receipt image
+uploads and previews, and category listing. Owners can also create, edit, and
+delete categories. New registrations receive cashier access.
 
 ## Environment variables
 
