@@ -1,1 +1,0 @@
-('Penjualan Tunai', 'income'),
