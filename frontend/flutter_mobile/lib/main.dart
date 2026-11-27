@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'controllers/auth_controller.dart';
 import 'controllers/category_controller.dart';
 import 'controllers/transaction_controller.dart';
@@ -21,7 +22,7 @@ void main() async {
 class MyApp extends StatelessWidget {
   final bool isLoggedIn;
 
-  const MyApp({Key? key, required this.isLoggedIn}) : super(key: key);
+  const MyApp({super.key, required this.isLoggedIn});
 
   @override
   Widget build(BuildContext context) {
@@ -38,10 +39,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
           scaffoldBackgroundColor: Colors.grey.shade50,
-          appBarTheme: const AppBarTheme(
-            elevation: 0,
-            centerTitle: true,
-          ),
+          appBarTheme: const AppBarTheme(elevation: 0, centerTitle: true),
         ),
         // Jika sudah login, langsung ke Dashboard. Jika belum, ke LoginScreen.
         home: isLoggedIn ? const DashboardScreen() : const LoginScreen(),

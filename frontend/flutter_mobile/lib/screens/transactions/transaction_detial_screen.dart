@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+
 import '../../controllers/transaction_controller.dart';
 import '../../models/transaction_model.dart';
 import 'transaction_form_screen.dart';
@@ -7,14 +8,16 @@ import 'transaction_form_screen.dart';
 class TransactionDetailScreen extends StatelessWidget {
   final TransactionModel transaction;
 
-  const TransactionDetailScreen({Key? key, required this.transaction}) : super(key: key);
+  const TransactionDetailScreen({super.key, required this.transaction});
 
   void _confirmDelete(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Hapus Transaksi'),
-        content: Text('Apakah kamu yakin ingin menghapus transaksi "${transaction.title}"?'),
+        content: Text(
+          'Apakah kamu yakin ingin menghapus transaksi "${transaction.categoryName ?? 'Transaksi'}"?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -23,19 +26,30 @@ class TransactionDetailScreen extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx); // Tutup dialog
-              final transactionController = Provider.of<TransactionController>(context, listen: false);
-              bool success = await transactionController.deleteTransaction(
+              final transactionController = Provider.of<TransactionController>(
+                context,
+                listen: false,
+              );
+              final success = await transactionController.deleteTransaction(
                 transaction.id,
-                (errorMessage) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
-                  );
+                (message, succeeded) {
+                  if (!succeeded && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(message),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 },
               );
 
               if (success && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Transaksi berhasil dihapus'), backgroundColor: Colors.green),
+                  const SnackBar(
+                    content: Text('Transaksi berhasil dihapus'),
+                    backgroundColor: Colors.green,
+                  ),
                 );
                 Navigator.pop(context); // Kembali ke halaman list transaksi
               }
@@ -49,7 +63,8 @@ class TransactionDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isIncome = transaction.type == 'income';
+    final bool isIncome = transaction.categoryType == 'income';
+    final createdAt = DateTime.tryParse(transaction.createdAt ?? '');
 
     return Scaffold(
       appBar: AppBar(
@@ -64,7 +79,8 @@ class TransactionDetailScreen extends StatelessWidget {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => TransactionFormScreen(transaction: transaction),
+                  builder: (context) =>
+                      TransactionFormScreen(transaction: transaction),
                 ),
               );
             },
@@ -77,8 +93,8 @@ class TransactionDetailScreen extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -88,7 +104,9 @@ class TransactionDetailScreen extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 35,
-                      backgroundColor: isIncome ? Colors.green.shade100 : Colors.red.shade100,
+                      backgroundColor: isIncome
+                          ? Colors.green.shade100
+                          : Colors.red.shade100,
                       child: Icon(
                         isIncome ? Icons.arrow_downward : Icons.arrow_upward,
                         size: 35,
@@ -97,7 +115,7 @@ class TransactionDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      transaction.title,
+                      transaction.categoryName ?? 'Transaksi',
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -119,24 +137,30 @@ class TransactionDetailScreen extends StatelessWidget {
               const SizedBox(height: 32),
               const Divider(),
               const SizedBox(height: 16),
-              
+
               // Informasi Detail
               _buildDetailRow(
                 icon: Icons.swap_vert,
                 label: 'Jenis Transaksi',
-                value: isIncome ? 'Pemasukan (Income)' : 'Pengeluaran (Expense)',
+                value: isIncome
+                    ? 'Pemasukan (Income)'
+                    : 'Pengeluaran (Expense)',
               ),
               const SizedBox(height: 16),
               _buildDetailRow(
                 icon: Icons.calendar_today,
                 label: 'Tanggal',
-                value: '${transaction.date.day}/${transaction.date.month}/${transaction.date.year}',
+                value: createdAt == null
+                    ? 'Tidak tersedia'
+                    : '${createdAt.toLocal().day}/${createdAt.toLocal().month}/${createdAt.toLocal().year}',
               ),
               const SizedBox(height: 16),
               _buildDetailRow(
                 icon: Icons.note,
                 label: 'Catatan',
-                value: (transaction.description == null || transaction.description!.isEmpty)
+                value:
+                    (transaction.description == null ||
+                        transaction.description!.isEmpty)
                     ? 'Tidak ada catatan'
                     : transaction.description!,
               ),
@@ -147,7 +171,11 @@ class TransactionDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow({required IconData icon, required String label, required String value}) {
+  Widget _buildDetailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -164,7 +192,10 @@ class TransactionDetailScreen extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 value,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),

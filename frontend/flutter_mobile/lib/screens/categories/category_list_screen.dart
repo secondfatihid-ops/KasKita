@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+
 import '../../controllers/category_controller.dart';
 import '../../models/category_model.dart';
 import 'category_form_screen.dart';
 
 class CategoryListScreen extends StatefulWidget {
-  const CategoryListScreen({Key? key}) : super(key: key);
+  const CategoryListScreen({super.key});
 
   @override
   State<CategoryListScreen> createState() => _CategoryListScreenState();
@@ -21,12 +22,18 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     });
   }
 
-  void _confirmDelete(BuildContext context, String categoryId, String categoryName) {
-    showDialog(
+  Future<void> _confirmDelete(
+    BuildContext context,
+    int categoryId,
+    String categoryName,
+  ) async {
+    await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Hapus Kategori'),
-        content: Text('Apakah kamu yakin ingin menghapus kategori "$categoryName"?'),
+        content: Text(
+          'Apakah kamu yakin ingin menghapus kategori "$categoryName"?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -35,16 +42,30 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              final categoryController = Provider.of<CategoryController>(context, listen: false);
-              bool success = await categoryController.deleteCategory(categoryId, (errorMessage) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
-                );
-              });
+              final categoryController = Provider.of<CategoryController>(
+                context,
+                listen: false,
+              );
+              final success = await categoryController.deleteCategory(
+                categoryId,
+                (message, succeeded) {
+                  if (!succeeded && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(message),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
+              );
 
-              if (success && mounted) {
+              if (success && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Kategori berhasil dihapus'), backgroundColor: Colors.green),
+                  const SnackBar(
+                    content: Text('Kategori berhasil dihapus'),
+                    backgroundColor: Colors.green,
+                  ),
                 );
               }
             },
@@ -65,8 +86,32 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
       ),
       body: Consumer<CategoryController>(
         builder: (context, categoryController, child) {
-          if (categoryController.isLoading && categoryController.categories.isEmpty) {
+          if (categoryController.isLoading &&
+              categoryController.categories.isEmpty) {
             return const Center(child: CircularProgressIndicator());
+          }
+
+          if (categoryController.error != null &&
+              categoryController.categories.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Gagal memuat kategori: ${categoryController.error}',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: categoryController.fetchCategories,
+                      child: const Text('Coba lagi'),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
 
           if (categoryController.categories.isEmpty) {
@@ -74,7 +119,11 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.category_outlined, size: 80, color: Colors.grey),
+                  const Icon(
+                    Icons.category_outlined,
+                    size: 80,
+                    color: Colors.grey,
+                  ),
                   const SizedBox(height: 16),
                   const Text(
                     'Belum ada kategori',
@@ -85,7 +134,9 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const CategoryFormScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => const CategoryFormScreen(),
+                        ),
                       );
                     },
                     icon: const Icon(Icons.add),
@@ -102,7 +153,8 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
               padding: const EdgeInsets.all(16.0),
               itemCount: categoryController.categories.length,
               itemBuilder: (context, index) {
-                final CategoryModel category = categoryController.categories[index];
+                final CategoryModel category =
+                    categoryController.categories[index];
                 final bool isIncome = category.type == 'income';
 
                 return Card(
@@ -113,7 +165,9 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                   ),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: isIncome ? Colors.green.shade100 : Colors.red.shade100,
+                      backgroundColor: isIncome
+                          ? Colors.green.shade100
+                          : Colors.red.shade100,
                       child: Icon(
                         isIncome ? Icons.arrow_downward : Icons.arrow_upward,
                         color: isIncome ? Colors.green : Colors.red,
@@ -126,7 +180,9 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                     subtitle: Text(
                       isIncome ? 'Pemasukan (Income)' : 'Pengeluaran (Expense)',
                       style: TextStyle(
-                        color: isIncome ? Colors.green.shade700 : Colors.red.shade700,
+                        color: isIncome
+                            ? Colors.green.shade700
+                            : Colors.red.shade700,
                         fontSize: 12,
                       ),
                     ),
@@ -139,14 +195,19 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => CategoryFormScreen(category: category),
+                                builder: (context) =>
+                                    CategoryFormScreen(category: category),
                               ),
                             );
                           },
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _confirmDelete(context, category.id, category.name),
+                          onPressed: () => _confirmDelete(
+                            context,
+                            category.id,
+                            category.name,
+                          ),
                         ),
                       ],
                     ),

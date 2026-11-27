@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+
 import '../../controllers/auth_controller.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_textfield.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({Key? key}) : super(key: key);
+  const RegisterScreen({super.key});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -16,9 +17,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   // Default role, bisa diubah jika ingin menggunakan dropdown
-  String _selectedRole = 'owner'; 
+  String _selectedRole = 'owner';
 
   @override
   void dispose() {
@@ -30,17 +31,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void _handleRegister() async {
     if (_formKey.currentState!.validate()) {
-      final authController = Provider.of<AuthController>(context, listen: false);
+      final authController = Provider.of<AuthController>(
+        context,
+        listen: false,
+      );
 
       bool success = await authController.register(
         _nameController.text.trim(),
         _emailController.text.trim(),
         _passwordController.text.trim(),
         _selectedRole,
-        (errorMessage) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
-          );
+        (message, succeeded) {
+          if (!succeeded) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(message), backgroundColor: Colors.red),
+            );
+          }
         },
       );
 
@@ -142,7 +148,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: 16),
                   // Dropdown untuk memilih Role (Owner / Cashier)
                   DropdownButtonFormField<String>(
-                    value: _selectedRole,
+                    initialValue: _selectedRole,
                     decoration: InputDecoration(
                       labelText: 'Peran (Role)',
                       prefixIcon: const Icon(Icons.badge, color: Colors.blue),
@@ -151,13 +157,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                     items: const [
-                      DropdownMenuItem(value: 'owner', child: Text('Owner (Pemilik)')),
-                      DropdownMenuItem(value: 'cashier', child: Text('Cashier (Kasir)')),
+                      DropdownMenuItem(
+                        value: 'owner',
+                        child: Text('Owner (Pemilik)'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'cashier',
+                        child: Text('Cashier (Kasir)'),
+                      ),
                     ],
                     onChanged: (value) {
-                      setState(() {
-                        _selectedRole = value!;
-                      });
+                      if (value != null) {
+                        setState(() => _selectedRole = value);
+                      }
                     },
                   ),
                   const SizedBox(height: 24),

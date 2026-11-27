@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+
 import '../../controllers/auth_controller.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_textfield.dart';
@@ -7,7 +8,7 @@ import '../dashboard/dashboard_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -27,7 +28,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      final authController = Provider.of<AuthController>(context, listen: false);
+      final authController = Provider.of<AuthController>(
+        context,
+        listen: false,
+      );
 
       bool success = await authController.login(
         _emailController.text.trim(),
@@ -120,8 +124,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: _handleLogin,
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       const Text('Belum punya akun? '),
                       GestureDetector(

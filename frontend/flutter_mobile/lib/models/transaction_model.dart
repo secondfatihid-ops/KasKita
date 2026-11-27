@@ -30,7 +30,7 @@ class TransactionModel {
       id: json['id'] ?? 0,
       userId: json['user_id'] ?? json['userId'] ?? 0,
       categoryId: json['category_id'] ?? json['categoryId'] ?? 0,
-      amount: double.tryParse(json['amount'].toString()) ?? 0.0,
+      amount: double.tryParse(json['amount']?.toString() ?? '') ?? 0.0,
       description: json['description'],
       receiptImage: json['receipt_image'] ?? json['receiptImage'],
       createdAt: json['created_at'] ?? json['createdAt'],

@@ -1,14 +1,16 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+
 import '../../controllers/category_controller.dart';
 import '../../models/category_model.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_textfield.dart';
 
 class CategoryFormScreen extends StatefulWidget {
-  final CategoryModel? category; // Jika null berarti Mode Tambah, jika ada isi berarti Mode Edit
+  final CategoryModel?
+  category; // Jika null berarti Mode Tambah, jika ada isi berarti Mode Edit
 
-  const CategoryFormScreen({Key? key, this.category}) : super(key: key);
+  const CategoryFormScreen({super.key, this.category});
 
   @override
   State<CategoryFormScreen> createState() => _CategoryFormScreenState();
@@ -17,9 +19,9 @@ class CategoryFormScreen extends StatefulWidget {
 class _CategoryFormScreenState extends State<CategoryFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  
+
   // Contoh tipe kategori: 'income' (pemasukan) atau 'expense' (pengeluaran)
-  String _selectedType = 'expense'; 
+  String _selectedType = 'expense';
 
   @override
   void initState() {
@@ -27,7 +29,9 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
     // Jika dalam mode edit, isi form dengan data yang sudah ada
     if (widget.category != null) {
       _nameController.text = widget.category!.name;
-      _selectedType = widget.category!.type; // Pastikan model kategori memiliki properti 'type'
+      _selectedType = widget
+          .category!
+          .type; // Pastikan model kategori memiliki properti 'type'
     }
   }
 
@@ -39,7 +43,10 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
 
   void _handleSave() async {
     if (_formKey.currentState!.validate()) {
-      final categoryController = Provider.of<CategoryController>(context, listen: false);
+      final categoryController = Provider.of<CategoryController>(
+        context,
+        listen: false,
+      );
 
       bool success;
       if (widget.category == null) {
@@ -47,8 +54,8 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
         success = await categoryController.addCategory(
           _nameController.text.trim(),
           _selectedType,
-          (errorMessage) {
-            _showSnackBar(errorMessage, Colors.red);
+          (message, succeeded) {
+            if (!succeeded) _showSnackBar(message, Colors.red);
           },
         );
       } else {
@@ -57,8 +64,8 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
           widget.category!.id, // Pastikan model kategori memiliki properti 'id'
           _nameController.text.trim(),
           _selectedType,
-          (errorMessage) {
-            _showSnackBar(errorMessage, Colors.red);
+          (message, succeeded) {
+            if (!succeeded) _showSnackBar(message, Colors.red);
           },
         );
       }
@@ -76,9 +83,8 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
   }
 
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: color),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   @override
@@ -128,7 +134,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
                 const SizedBox(height: 16),
                 // Pilihan Tipe Kategori (Pemasukan / Pengeluaran)
                 DropdownButtonFormField<String>(
-                  value: _selectedType,
+                  initialValue: _selectedType,
                   decoration: InputDecoration(
                     labelText: 'Jenis Kategori',
                     prefixIcon: const Icon(Icons.swap_vert, color: Colors.blue),
@@ -137,13 +143,19 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
                     ),
                   ),
                   items: const [
-                    DropdownMenuItem(value: 'expense', child: Text('Pengeluaran (Expense)')),
-                    DropdownMenuItem(value: 'income', child: Text('Pemasukan (Income)')),
+                    DropdownMenuItem(
+                      value: 'expense',
+                      child: Text('Pengeluaran (Expense)'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'income',
+                      child: Text('Pemasukan (Income)'),
+                    ),
                   ],
                   onChanged: (value) {
-                    setState(() {
-                      _selectedType = value!;
-                    });
+                    if (value != null) {
+                      setState(() => _selectedType = value);
+                    }
                   },
                 ),
                 const SizedBox(height: 32),

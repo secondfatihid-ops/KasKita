@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:intl/intl.dart';
 
 class SummaryCard extends StatelessWidget {
@@ -7,14 +7,18 @@ class SummaryCard extends StatelessWidget {
   final double totalExpense;
 
   const SummaryCard({
-    Key? key,
+    super.key,
     required this.totalBalance,
     required this.totalIncome,
     required this.totalExpense,
-  }) : super(key: key);
+  });
 
   String _formatCurrency(double amount) {
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final formatter = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
     return formatter.format(amount);
   }
 
@@ -32,7 +36,7 @@ class SummaryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: Colors.blue.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -59,8 +63,10 @@ class SummaryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: 16,
+            runSpacing: 12,
             children: [
               // Pemasukan
               Row(
@@ -68,10 +74,14 @@ class SummaryCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.2),
+                      color: Colors.green.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.arrow_downward, color: Colors.greenAccent, size: 18),
+                    child: const Icon(
+                      Icons.arrow_downward,
+                      color: Colors.greenAccent,
+                      size: 18,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Column(
@@ -99,10 +109,14 @@ class SummaryCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.2),
+                      color: Colors.red.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.arrow_upward, color: Colors.redAccent, size: 18),
+                    child: const Icon(
+                      Icons.arrow_upward,
+                      color: Colors.redAccent,
+                      size: 18,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Column(

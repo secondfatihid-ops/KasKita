@@ -1,5 +1,10 @@
-import 'package:flutter/material.dart';
+import 'dart:io';
+
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+
 import '../../controllers/category_controller.dart';
 import '../../controllers/transaction_controller.dart';
 import '../../models/transaction_model.dart';
@@ -7,9 +12,9 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/custom_textfield.dart';
 
 class TransactionFormScreen extends StatefulWidget {
-  final TransactionModel? transaction; // Jika null = Tambah, jika ada = Edit
+  final TransactionModel? transaction;
 
-  const TransactionFormScreen({Key? key, this.transaction}) : super(key: key);
+  const TransactionFormScreen({super.key, this.transaction});
 
   @override
   State<TransactionFormScreen> createState() => _TransactionFormScreenState();
@@ -17,117 +22,121 @@ class TransactionFormScreen extends StatefulWidget {
 
 class _TransactionFormScreenState extends State<TransactionFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _imagePicker = ImagePicker();
 
-  String? _selectedCategoryId;
-  String _selectedType = 'expense'; // Default tipe: expense atau income
-  DateTime _selectedDate = DateTime.now();
+  int? _selectedCategoryId;
+  String _selectedType = 'expense';
+  File? _receiptImage;
 
   @override
   void initState() {
     super.initState();
-    // Ambil daftar kategori saat halaman dimuat agar dropdown kategori terisi
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<CategoryController>(context, listen: false).fetchCategories();
-    });
-
-    // Jika mode edit, isi form dengan data transaksi sebelumnya
-    if (widget.transaction != null) {
-      _titleController.text = widget.transaction!.title;
-      _amountController.text = widget.transaction!.amount.toString();
-      _descriptionController.text = widget.transaction!.description ?? '';
-      _selectedType = widget.transaction!.type;
-      _selectedCategoryId = widget.transaction!.categoryId;
-      _selectedDate = widget.transaction!.date;
+    final transaction = widget.transaction;
+    if (transaction != null) {
+      _amountController.text = transaction.amount.toString();
+      _descriptionController.text = transaction.description ?? '';
+      _selectedCategoryId = transaction.categoryId;
+      _selectedType = transaction.categoryType ?? 'expense';
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<CategoryController>().fetchCategories();
+      }
+    });
   }
 
   @override
   void dispose() {
-    _titleController.dispose();
     _amountController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
+  Future<void> _pickReceiptImage() async {
+    try {
+      final image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+      if (image != null && mounted) {
+        setState(() => _receiptImage = File(image.path));
+      }
+    } on PlatformException catch (error) {
+      if (mounted) {
+        _showSnackBar(
+          'Tidak dapat memilih gambar: ${error.message}',
+          Colors.red,
+        );
+      }
     }
   }
 
-  void _handleSave() async {
-    if (_formKey.currentState!.validate()) {
-      if (_selectedCategoryId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pilih kategori terlebih dahulu'), backgroundColor: Colors.red),
-        );
-        return;
-      }
+  Future<void> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      final transactionController = Provider.of<TransactionController>(context, listen: false);
-      final double amount = double.tryParse(_amountController.text) ?? 0.0;
+    final categoryId = _selectedCategoryId;
+    if (categoryId == null) {
+      _showSnackBar('Pilih kategori terlebih dahulu', Colors.red);
+      return;
+    }
 
-      bool success;
-      if (widget.transaction == null) {
-        // Tambah transaksi baru
-        success = await transactionController.addTransaction(
-          title: _titleController.text.trim(),
-          amount: amount,
-          type: _selectedType,
-          categoryId: _selectedCategoryId!,
-          date: _selectedDate,
-          description: _descriptionController.text.trim(),
-          onError: (errorMessage) {
-            _showSnackBar(errorMessage, Colors.red);
-          },
-        );
-      } else {
-        // Edit transaksi
-        success = await transactionController.updateTransaction(
-          id: widget.transaction!.id,
-          title: _titleController.text.trim(),
-          amount: amount,
-          type: _selectedType,
-          categoryId: _selectedCategoryId!,
-          date: _selectedDate,
-          description: _descriptionController.text.trim(),
-          onError: (errorMessage) {
-            _showSnackBar(errorMessage, Colors.red);
-          },
-        );
-      }
+    final controller = context.read<TransactionController>();
+    final amount = double.parse(_amountController.text.trim());
+    void onFinished(String message, bool succeeded) {
+      if (!succeeded && mounted) _showSnackBar(message, Colors.red);
+    }
 
-      if (success && mounted) {
-        _showSnackBar(
-          widget.transaction == null ? 'Transaksi berhasil ditambahkan' : 'Transaksi berhasil diperbarui',
-          Colors.green,
-        );
-        Navigator.pop(context);
-      }
+    final transaction = widget.transaction;
+    final success = transaction == null
+        ? await controller.addTransaction(
+            categoryId: categoryId,
+            amount: amount,
+            description: _descriptionController.text.trim(),
+            receiptImage: _receiptImage,
+            onFinished: onFinished,
+          )
+        : await controller.updateTransaction(
+            id: transaction.id,
+            categoryId: categoryId,
+            amount: amount,
+            description: _descriptionController.text.trim(),
+            receiptImage: _receiptImage,
+            onFinished: onFinished,
+          );
+
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            transaction == null
+                ? 'Transaksi berhasil ditambahkan'
+                : 'Transaksi berhasil diperbarui',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
     }
   }
 
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: color),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   @override
   Widget build(BuildContext context) {
-    final transactionController = Provider.of<TransactionController>(context);
-    final categoryController = Provider.of<CategoryController>(context);
+    final transactionController = context.watch<TransactionController>();
+    final categoryController = context.watch<CategoryController>();
+    final categories = categoryController.categories
+        .where((category) => category.type == _selectedType)
+        .toList();
+    final selectedCategoryId =
+        categories.any((category) => category.id == _selectedCategoryId)
+        ? _selectedCategoryId
+        : null;
     final isEdit = widget.transaction != null;
 
     return Scaffold(
@@ -138,103 +147,94 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Pilihan Tipe Transaksi (Income / Expense)
                 ToggleButtons(
-                  isSelcted: [_selectedType == 'expense', _selectedType == 'income'], // Perhatikan sesuaikan getter/setter state
-                  isSelected: [_selectedType == 'expense', _selectedType == 'income'],
+                  isSelected: [
+                    _selectedType == 'expense',
+                    _selectedType == 'income',
+                  ],
                   onPressed: (index) {
                     setState(() {
                       _selectedType = index == 0 ? 'expense' : 'income';
-                      _selectedCategoryId = null; // Reset kategori saat tipe berubah
+                      _selectedCategoryId = null;
                     });
                   },
                   borderRadius: BorderRadius.circular(8),
                   selectedColor: Colors.white,
-                  fillColor: _selectedType == 'expense' ? Colors.red : Colors.green,
+                  fillColor: _selectedType == 'expense'
+                      ? Colors.red
+                      : Colors.green,
                   color: Colors.black,
-                  constraints: const BoxConstraints(minHeight: 40, minWidth: 150),
-                  children: const [
-                    Text('Pengeluaran', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text('Pemasukan', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ],
+                  constraints: const BoxConstraints(
+                    minHeight: 44,
+                    minWidth: 120,
+                  ),
+                  children: const [Text('Pengeluaran'), Text('Pemasukan')],
                 ),
                 const SizedBox(height: 20),
-                CustomTextField(
-                  controller: _titleController,
-                  label: 'Judul Transaksi',
-                  icon: Icons.title,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Judul tidak boleh kosong';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
                 CustomTextField(
                   controller: _amountController,
                   label: 'Nominal (Rp)',
                   icon: Icons.attach_money,
-                  keyboardType: TextInputType.number,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Nominal tidak boleh kosong';
-                    }
-                    if (double.tryParse(value) == null) {
-                      return 'Masukkan angka yang valid';
+                    final amount = double.tryParse(value?.trim() ?? '');
+                    if (amount == null || amount <= 0) {
+                      return 'Masukkan nominal lebih dari 0';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
-                // Dropdown Kategori berdasarkan tipe yang dipilih
-                DropdownButtonFormField<String>(
-                  value: _selectedCategoryId,
+                DropdownButtonFormField<int>(
+                  initialValue: selectedCategoryId,
                   decoration: InputDecoration(
                     labelText: 'Kategori',
                     prefixIcon: const Icon(Icons.category, color: Colors.blue),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  items: categoryController.categories
-                      .where((cat) => cat.type == _selectedType)
-                      .map((category) {
-                    return DropdownMenuItem(
-                      value: category.id,
-                      child: Text(category.name),
-                    );
-                  }).toList(),
+                  items: categories
+                      .map(
+                        (category) => DropdownMenuItem<int>(
+                          value: category.id,
+                          child: Text(category.name),
+                        ),
+                      )
+                      .toList(),
                   onChanged: (value) {
-                    setState(() {
-                      _selectedCategoryId = value;
-                    });
+                    setState(() => _selectedCategoryId = value);
                   },
-                  validator: (value) => value == null ? 'Pilih kategori terlebih dahulu' : null,
+                  validator: (value) =>
+                      value == null ? 'Pilih kategori terlebih dahulu' : null,
                 ),
-                const SizedBox(height: 16),
-                // Pilihan Tanggal
-                InputDecorator(
-                  decoration: InputDecoration(
-                    labelText: 'Tanggal',
-                    prefixIcon: const Icon(Icons.calendar_today, color: Colors.blue),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                if (categoryController.error != null &&
+                    categoryController.categories.isEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Gagal memuat kategori: ${categoryController.error}',
+                    style: const TextStyle(color: Colors.red),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.between,
-                    children: [
-                      Text("${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}"),
-                      TextButton(
-                        onPressed: () => _selectDate(context),
-                        child: const Text('Pilih Tanggal'),
-                      ),
-                    ],
+                  TextButton(
+                    onPressed: categoryController.fetchCategories,
+                    child: const Text('Coba lagi'),
                   ),
-                ),
+                ] else if (categories.isEmpty &&
+                    !categoryController.isLoading) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Belum ada kategori untuk jenis ini.',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 CustomTextField(
                   controller: _descriptionController,
@@ -242,6 +242,43 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                   icon: Icons.note,
                   maxLines: 3,
                 ),
+                const SizedBox(height: 20),
+                OutlinedButton.icon(
+                  onPressed: _pickReceiptImage,
+                  icon: const Icon(Icons.image_outlined),
+                  label: Text(
+                    _receiptImage == null
+                        ? 'Pilih foto nota'
+                        : 'Ganti foto nota',
+                  ),
+                ),
+                if (_receiptImage != null) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(
+                      _receiptImage!,
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ] else if (isEdit &&
+                    widget.transaction!.receiptImage != null &&
+                    widget.transaction!.receiptImage!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      widget.transaction!.receiptImage!,
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) =>
+                          const Text('Foto nota sebelumnya tidak tersedia.'),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 CustomButton(
                   text: isEdit ? 'Simpan Perubahan' : 'Tambah Transaksi',

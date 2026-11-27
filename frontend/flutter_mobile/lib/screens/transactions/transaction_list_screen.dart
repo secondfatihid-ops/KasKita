@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+
 import '../../controllers/transaction_controller.dart';
 import '../../models/transaction_model.dart';
 import '../../widgets/transaction_item_card.dart';
@@ -7,7 +8,7 @@ import 'transaction_detial_screen.dart';
 import 'transaction_form_screen.dart';
 
 class TransactionListScreen extends StatefulWidget {
-  const TransactionListScreen({Key? key}) : super(key: key);
+  const TransactionListScreen({super.key});
 
   @override
   State<TransactionListScreen> createState() => _TransactionListScreenState();
@@ -18,12 +19,19 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<TransactionController>(context, listen: false).fetchTransactions();
+      Provider.of<TransactionController>(
+        context,
+        listen: false,
+      ).fetchTransactions();
     });
   }
 
-  void _confirmDelete(BuildContext context, String transactionId, String title) {
-    showDialog(
+  Future<void> _confirmDelete(
+    BuildContext context,
+    int transactionId,
+    String title,
+  ) async {
+    await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Hapus Transaksi'),
@@ -36,16 +44,30 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              final transactionController = Provider.of<TransactionController>(context, listen: false);
-              bool success = await transactionController.deleteTransaction(transactionId, (errorMessage) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
-                );
-              });
+              final transactionController = Provider.of<TransactionController>(
+                context,
+                listen: false,
+              );
+              final success = await transactionController.deleteTransaction(
+                transactionId,
+                (message, succeeded) {
+                  if (!succeeded && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(message),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
+              );
 
-              if (success && mounted) {
+              if (success && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Transaksi berhasil dihapus'), backgroundColor: Colors.green),
+                  const SnackBar(
+                    content: Text('Transaksi berhasil dihapus'),
+                    backgroundColor: Colors.green,
+                  ),
                 );
               }
             },
@@ -66,8 +88,32 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       ),
       body: Consumer<TransactionController>(
         builder: (context, transactionController, child) {
-          if (transactionController.isLoading && transactionController.transactions.isEmpty) {
+          if (transactionController.isLoading &&
+              transactionController.transactions.isEmpty) {
             return const Center(child: CircularProgressIndicator());
+          }
+
+          if (transactionController.error != null &&
+              transactionController.transactions.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Gagal memuat transaksi: ${transactionController.error}',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: transactionController.fetchTransactions,
+                      child: const Text('Coba lagi'),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
 
           if (transactionController.transactions.isEmpty) {
@@ -75,7 +121,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.receipt_long_outlined, size: 80, color: Colors.grey),
+                  const Icon(
+                    Icons.receipt_long_outlined,
+                    size: 80,
+                    color: Colors.grey,
+                  ),
                   const SizedBox(height: 16),
                   const Text(
                     'Belum ada riwayat transaksi',
@@ -86,7 +136,9 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const TransactionFormScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => const TransactionFormScreen(),
+                        ),
                       );
                     },
                     icon: const Icon(Icons.add),
@@ -103,31 +155,25 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
               padding: const EdgeInsets.all(16.0),
               itemCount: transactionController.transactions.length,
               itemBuilder: (context, index) {
-                final TransactionModel transaction = transactionController.transactions[index];
+                final TransactionModel transaction =
+                    transactionController.transactions[index];
 
-                return Dismissible(
-                  key: Key(transaction.id),
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    color: Colors.red,
-                    child: const Icon(Icons.delete, color: Colors.white),
-                  ),
-                  confirmDismiss: (direction) async {
-                    _confirmDelete(context, transaction.id, transaction.title);
-                    return false; // Dialog akan menangani penghapusan secara eksplisit
+                return TransactionItemCard(
+                  key: ValueKey(transaction.id),
+                  transaction: transaction,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            TransactionDetailScreen(transaction: transaction),
+                      ),
+                    );
                   },
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => TransactionDetailScreen(transaction: transaction),
-                        ),
-                      );
-                    },
-                    child: TransactionItemCard(transaction: transaction),
+                  onDelete: () => _confirmDelete(
+                    context,
+                    transaction.id,
+                    transaction.categoryName ?? 'Transaksi',
                   ),
                 );
               },
@@ -141,7 +187,9 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const TransactionFormScreen()),
+            MaterialPageRoute(
+              builder: (context) => const TransactionFormScreen(),
+            ),
           );
         },
         child: const Icon(Icons.add),

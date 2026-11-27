@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+
 import '../../controllers/auth_controller.dart';
 import '../../controllers/transaction_controller.dart';
 import '../../widgets/summary_card.dart';
@@ -8,9 +9,10 @@ import '../auth/login_screen.dart';
 import '../categories/category_list_screen.dart';
 import '../transactions/transaction_form_screen.dart';
 import '../transactions/transaction_list_screen.dart';
+import '../transactions/transaction_detial_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({Key? key}) : super(key: key);
+  const DashboardScreen({super.key});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -22,7 +24,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Muat data transaksi atau ringkasan saat dashboard dibuka
-      Provider.of<TransactionController>(context, listen: false).fetchTransactions();
+      Provider.of<TransactionController>(
+        context,
+        listen: false,
+      ).fetchTransactions();
     });
   }
 
@@ -52,7 +57,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const CategoryListScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const CategoryListScreen(),
+                ),
               );
             },
           ),
@@ -65,8 +72,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: Consumer<TransactionController>(
         builder: (context, transactionController, child) {
-          if (transactionController.isLoading && transactionController.transactions.isEmpty) {
+          if (transactionController.isLoading &&
+              transactionController.transactions.isEmpty) {
             return const Center(child: CircularProgressIndicator());
+          }
+
+          if (transactionController.error != null &&
+              transactionController.transactions.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Gagal memuat transaksi: ${transactionController.error}',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: transactionController.fetchTransactions,
+                      child: const Text('Coba lagi'),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
 
           return RefreshIndicator(
@@ -85,7 +116,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 24),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.between,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
                         'Transaksi Terbaru',
@@ -99,7 +130,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const TransactionListScreen(),
+                              builder: (context) =>
+                                  const TransactionListScreen(),
                             ),
                           );
                         },
@@ -121,13 +153,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       : ListView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          itemCount: transactionController.transactions.length > 5
+                          itemCount:
+                              transactionController.transactions.length > 5
                               ? 5
                               : transactionController.transactions.length, // Batasi 5 transaksi terbaru di dashboard
                           itemBuilder: (context, index) {
-                            final transaction = transactionController.transactions[index];
+                            final transaction =
+                                transactionController.transactions[index];
                             return TransactionItemCard(
                               transaction: transaction,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => TransactionDetailScreen(
+                                    transaction: transaction,
+                                  ),
+                                ),
+                              ),
                             );
                           },
                         ),
@@ -143,7 +185,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const TransactionFormScreen()),
+            MaterialPageRoute(
+              builder: (context) => const TransactionFormScreen(),
+            ),
           );
         },
         child: const Icon(Icons.add),

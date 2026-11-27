@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
@@ -7,16 +7,18 @@ class CustomTextField extends StatelessWidget {
   final bool isPassword;
   final TextInputType keyboardType;
   final String? Function(String?)? validator;
+  final int maxLines;
 
   const CustomTextField({
-    Key? key,
+    super.key,
     required this.controller,
     required this.label,
     required this.icon,
     this.isPassword = false,
     this.keyboardType = TextInputType.text,
     this.validator,
-  }) : super(key: key);
+    this.maxLines = 1,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -25,12 +27,11 @@ class CustomTextField extends StatelessWidget {
       obscureText: isPassword,
       keyboardType: keyboardType,
       validator: validator,
+      maxLines: isPassword ? 1 : maxLines,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(color: Colors.grey.shade400),
