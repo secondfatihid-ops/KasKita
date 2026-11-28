@@ -1,17 +1,19 @@
 # flutter_mobile
 
-A new Flutter project.
+## Backend connection
 
-## Getting Started
+Start the Express backend before running the app. It listens on port `5000`
+and serves the API under `/api`.
 
-This project is a starting point for a Flutter application.
+- Chrome uses the browser's host name with port `5000`.
+- The Android Studio emulator uses `10.0.2.2:5000` to reach the host computer.
+- For a physical phone, configure the computer's LAN address:
 
-A few resources to get you started if this is your first Flutter project:
+```sh
+flutter run --dart-define=API_BASE_URL=http://192.168.1.25:5000/api
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Replace the example address with the computer's reachable IP. The phone and
+computer must be on the same network, and the computer firewall must allow
+connections to port `5000`. Use an HTTPS `API_BASE_URL` when serving the web app
+over HTTPS to avoid browser mixed-content restrictions.
